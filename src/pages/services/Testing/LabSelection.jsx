@@ -49,15 +49,16 @@ function LabSelection({ formData, updateFormData }) {
     },
   ]
 
-  const [selectedLabs, setSelectedLabs] = useState([recommendedLabs[0].id])
 
-  const toggleLabSelection = (labId) => {
-    if (selectedLabs.includes(labId)) {
-      setSelectedLabs(selectedLabs.filter(id => id !== labId))
-    } else {
-      setSelectedLabs([...selectedLabs, labId])
-    }
-  }
+  // const [selectedLabs, setSelectedLabs] = useState([recommendedLabs[0].id])
+
+  // const toggleLabSelection = (labId) => {
+  //   if (selectedLabs.includes(labId)) {
+  //     setSelectedLabs(selectedLabs.filter(id => id !== labId))
+  //   } else {
+  //     setSelectedLabs([...selectedLabs, labId])
+  //   }
+  // }
 
   return (
     <div className="space-y-6">
@@ -68,9 +69,9 @@ function LabSelection({ formData, updateFormData }) {
       {/* Region Selection */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="font-medium text-gray-700 mb-4">Region :</h3>
-        
+
         <h4 className="text-center font-medium text-gray-700 mb-4">---------- Select Region ----------</h4>
-        
+
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
@@ -126,7 +127,7 @@ function LabSelection({ formData, updateFormData }) {
 
         {/* Recommended Labs */}
         <h4 className="text-center font-medium text-gray-700 mb-4">---------- Select Lab ----------</h4>
-        
+
         <div>
           <h5 className="font-semibold text-gray-900 mb-4">Recommended Labs</h5>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
@@ -137,10 +138,26 @@ function LabSelection({ formData, updateFormData }) {
               >
                 <input
                   type="checkbox"
-                  checked={selectedLabs.includes(lab.id)}
-                  onChange={() => toggleLabSelection(lab.id)}
+                  checked={Array.isArray(formData.selectedLabs) && formData.selectedLabs.includes(lab.name)}
+                  onChange={() => {
+                    const current = Array.isArray(formData.selectedLabs)
+                      ? formData.selectedLabs
+                      : []
+
+                    if (current.includes(lab.name)) {
+                      updateFormData({
+                        selectedLabs: current.filter(l => l !== lab.name)
+                      })
+                    } else {
+                      updateFormData({
+                        selectedLabs: [...current, lab.name]
+                      })
+                    }
+                  }}
                   className="w-4 h-4"
                 />
+                {/* checked={selectedLabs.includes(lab.id)}
+                onChange={() => toggleLabSelection(lab.id)} */}
                 <span className="text-sm flex-1 font-medium text-gray-900">{lab.name}</span>
               </label>
             ))}
@@ -151,7 +168,7 @@ function LabSelection({ formData, updateFormData }) {
       {/* Review Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-xl font-bold text-gray-900 text-center mb-6">Review</h3>
-        
+
         <div className="space-y-4 mb-6">
           <div className="border border-gray-200 rounded-lg p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">Name of EUT</label>
