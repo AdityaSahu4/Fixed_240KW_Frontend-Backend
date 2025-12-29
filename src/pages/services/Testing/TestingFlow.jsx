@@ -1,3 +1,12 @@
+import {
+  startTestingRequest,
+  saveProductDetails,
+  saveTechnicalDocuments,
+  saveTestingRequirements,
+  saveTestingStandards,
+  submitTestingRequest
+} from "../../services/testingApi"
+import { fetchFullTestingRequest } from "../../services/testingApi"
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,8 +17,10 @@ import TestingRequirementsForm from './TestingRequirementsForm'
 import TestingStandardsForm from './TestingStandardsForm'
 import LabSelection from './LabSelection'
 
+
 function TestingFlow() {
   const navigate = useNavigate()
+  const [testingRequestId, setTestingRequestId] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
     // Product Details
@@ -27,26 +38,26 @@ function TestingFlow() {
     signalLines: '',
     softwareName: '',
     softwareVersion: '',
-    
+
     // Industry/Application
     industry: [],
     industryOther: '',
-    
+
     // Testing dates
     preferredDate: '',
     additionalNotes: '',
-    
+
     // Testing Requirements
     testType: 'final',
     selectedTests: [],
-    
+
     // Testing Standards
     selectedRegions: [],
     selectedStandards: [],
-    
+
     // Lab Selection
-    selectedLab: null,
-    
+    selectedLab: [],
+
     // Documents
     uploadedDocs: {}
   })
@@ -66,26 +77,187 @@ function TestingFlow() {
     'lab-selection',
   ]
   const { step } = useParams()
+  // Create / restore testing request
+  // useEffect(() => {
+  //   const existingId = localStorage.getItem("testingRequestId")
+
+  //   if (existingId) {
+  //     setTestingRequestId(Number(existingId))
+  //     return
+  //   }
+
+  //   async function init() {
+  //     try {
+  //       const res = await startTestingRequest()
+  //       setTestingRequestId(res.id)
+  //       localStorage.setItem("testingRequestId", res.id)
+  //     } catch (err) {
+  //       console.error("Failed to start testing request", err)
+  //     }
+  //   }
+
+  //   init()
+  // }, [])
+  useEffect(() => {
+    const init = async () => {
+      const storedId = localStorage.getItem("testingRequestId")
+
+      if (storedId) {
+        try {
+          await api.get(`/testing-request/${storedId}`)
+          setTestingRequestId(Number(storedId))
+          return
+        } catch {
+          localStorage.removeItem("testingRequestId")
+        }
+      }
+
+      const res = await startTestingRequest()
+      setTestingRequestId(res.id)
+      localStorage.setItem("testingRequestId", res.id)
+    }
+
+    init()
+  }, [])
+
+
+
+  // Sync URL step ↔ currentStep (MANDATORY)
   useEffect(() => {
     if (!step) return
+
     const index = stepPaths.indexOf(step)
     if (index !== -1) {
       setCurrentStep(index)
-    }}, [step])
+    }
+  }, [step])
+
 
 
   const CurrentStepComponent = steps[currentStep]?.component
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      const nextStep = currentStep + 1
-      setCurrentStep(nextStep)
-      navigate(`/services/testing/${stepPaths[nextStep]}`)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      handleSubmit()
+  const handleNext = async () => {
+    if (!testingRequestId) return
+
+    try {
+      // STEP 1 – Product
+      if (currentStep === 0) {
+        await saveProductDetails(testingRequestId, {
+          eut_name: formData.eutName,
+          eut_quantity: formData.eutQuantity,
+          manufacturer: formData.manufacturer,
+          model_no: formData.modelNo,
+          serial_no: formData.serialNo,
+          supply_voltage: formData.supplyVoltage,
+          operating_frequency: formData.operatingFrequency,
+          current: formData.current,
+          weight: formData.weight,
+          dimensions: formData.dimensions,
+          power_ports: formData.powerPorts,
+          signal_lines: formData.signalLines,
+          software_name: formData.softwareName,
+          software_version: formData.softwareVersion,
+          industry: formData.industry,
+          industry_other: formData.industryOther,
+          preferred_date: formData.preferredDate,
+          notes: formData.additionalNotes
+        })
+
+      }
+
+      // STEP 2 – Technical Documents
+      if (currentStep === 1) {
+        try {
+          const documentsPayload = Object.entries(formData.uploadedDocs).map(
+            ([docType, file]) => ({
+              doc_type: docType,
+              file_name: file.name || file,
+              file_path: "",   // placeholder for now
+              file_size: file.size || 0
+            })
+          )
+
+          await saveTechnicalDocuments(testingRequestId, {
+            documents: documentsPayload
+          })
+        } catch (err) {
+          console.error("Failed to save technical documents", err)
+          alert("Failed to save documents")
+          return
+        }
+      }
+
+      // STEP 3 – Requirements
+      if (currentStep === 2) {
+        try {
+          await saveTestingRequirements(testingRequestId, {
+            test_type: formData.testType,
+            selected_tests: formData.selectedTests
+          })
+        } catch (err) {
+          console.error("Failed to save testing requirements", err)
+          alert("Failed to save testing requirements")
+          return
+        }
+      }
+
+      // STEP 4 – Testing Standards
+      if (currentStep === 3) {
+        try {
+          await saveTestingStandards(testingRequestId, {
+            regions: formData.selectedRegions,
+            standards: formData.selectedStandards
+          })
+        } catch (err) {
+          console.error("Failed to save testing standards", err)
+          alert("Failed to save testing standards")
+          return
+        }
+      }
+
+      // STEP 5 – Lab Selection
+      if (currentStep === 4) {
+        try {
+          console.log("DEBUG selectedLabs:", formData.selectedLabs)
+
+          if (!formData.selectedLabs || formData.selectedLabs.length === 0) {
+            alert("Please select at least one lab")
+            return
+          }
+
+          await submitTestingRequest(testingRequestId, {
+            selected_labs: formData.selectedLabs,
+            remarks: formData.additionalNotes
+          })
+
+          navigate("/services/testing/submission-success")
+          return
+
+        } catch (err) {
+          console.error("Failed to submit testing request", err)
+          alert("Failed to submit testing request")
+          return
+        }
+      }
+
+
+
+      // Navigate
+      if (currentStep === steps.length - 1) {
+        await handleSubmit()
+        return
+      }
+
+      const next = currentStep + 1
+      setCurrentStep(next)
+      navigate(`/services/testing/${stepPaths[next]}`)
+
+    } catch (err) {
+      console.error(err)
+      alert("Failed to save step")
     }
   }
+
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -100,13 +272,16 @@ function TestingFlow() {
     localStorage.setItem('testing_draft', JSON.stringify(formData))
     alert('Draft saved successfully!')
   }
-  
-  const handleSubmit = () => {
-    console.log('Form submitted:', formData)
 
-  // Later: send to FastAPI here
-    navigate('/services/testing/submission-success')
+  const handleSubmit = async () => {
+    await submitTestingRequest(testingRequestId, {
+      selected_labs: formData.selectedLabs,
+      remarks: formData.additionalNotes
+    })
+
+    navigate("/services/testing/submission-success")
   }
+
 
   const updateFormData = (updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
@@ -134,13 +309,12 @@ function TestingFlow() {
                     key={index}
                     className="flex items-start gap-3"
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      index === currentStep
-                        ? 'bg-blue-600 text-white'
-                        : step.completed
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${index === currentStep
+                      ? 'bg-blue-600 text-white'
+                      : step.completed
                         ? 'bg-green-500 text-white'
                         : 'bg-gray-300 text-gray-600'
-                    }`}>
+                      }`}>
                       {step.completed ? (
                         <CheckCircle className="w-5 h-5" />
                       ) : (
@@ -148,9 +322,8 @@ function TestingFlow() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <div className={`text-sm font-medium ${
-                        index === currentStep ? 'text-gray-900' : 'text-gray-600'
-                      }`}>
+                      <div className={`text-sm font-medium ${index === currentStep ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
                         {step.title}
                       </div>
                     </div>
