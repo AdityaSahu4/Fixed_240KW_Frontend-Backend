@@ -17,7 +17,7 @@ from .schemas import (
 )
 
 def create_testing_request(db: Session):
-    tr = TestingRequest(status="submitted")
+    tr = TestingRequest(status="draft")  # ✅ Changed from "submitted" to "draft"
     db.add(tr)
     db.commit()
     db.refresh(tr)
@@ -143,6 +143,9 @@ def submit_request(db: Session, testing_request_id: int, payload: LabSelectionSc
     db.commit()
 
 def get_full_testing_request(db: Session, testing_request_id: int):
+    """
+    ✅ FIXED: Returns data structure matching frontend expectations
+    """
     tr = db.query(TestingRequest).filter(
         TestingRequest.id == testing_request_id
     ).first()
@@ -166,15 +169,45 @@ def get_full_testing_request(db: Session, testing_request_id: int):
         testing_request_id=testing_request_id
     ).first()
 
+    # ✅ Convert SQLAlchemy models to dicts with proper key names
     return {
-        "testing_request": {
-            "id": tr.id,
-            "status": tr.status,
-            "created_at": tr.created_at
-        },
-        "product": product,
-        "requirements": requirements,
-        "standards": standards,
-        "lab": lab
+        "id": tr.id,
+        "status": tr.status,
+        "created_at": str(tr.created_at) if tr.created_at else None,
+        "product_details": {
+            "eut_name": product.eut_name,
+            "eut_quantity": product.eut_quantity,
+            "manufacturer": product.manufacturer,
+            "model_no": product.model_no,
+            "serial_no": product.serial_no,
+            "supply_voltage": product.supply_voltage,
+            "operating_frequency": product.operating_frequency,
+            "current": product.current,
+            "weight": product.weight,
+            "dimensions": {
+                "length": product.length_mm,
+                "width": product.width_mm,
+                "height": product.height_mm
+            },
+            "power_ports": product.power_ports,
+            "signal_lines": product.signal_lines,
+            "software_name": product.software_name,
+            "software_version": product.software_version,
+            "industry": product.industry,
+            "industry_other": product.industry_other,
+            "preferred_date": product.preferred_date,
+            "notes": product.notes
+        } if product else None,
+        "testing_requirements": {
+            "test_type": requirements.test_type,
+            "selected_tests": requirements.selected_tests
+        } if requirements else None,
+        "testing_standards": {
+            "regions": standards.regions,
+            "standards": standards.standards
+        } if standards else None,
+        "lab_selection": {
+            "selected_labs": lab.selected_labs,
+            "remarks": lab.remarks
+        } if lab else None
     }
-

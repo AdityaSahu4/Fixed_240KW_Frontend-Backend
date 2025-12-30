@@ -26,5 +26,6 @@ export const saveTestingStandards = (id, data) =>
 export const submitTestingRequest = (id, data) =>
   api.post(`/testing-request/${id}/submit`, data)
 
+// Fetch full testing request for review
 export const fetchFullTestingRequest = (id) =>
   api.get(`/testing-request/${id}/full`).then(res => res.data)
