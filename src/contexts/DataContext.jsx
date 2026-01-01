@@ -23,41 +23,71 @@ export const DataProvider = ({ children }) => {
 
   // Products state
   const [products, setProducts] = useState(() => loadFromStorage('techlink_products', [
-    { 
-      id: 'BP-2024-001', 
-      name: 'EV Charger V2', 
-      service: 'EMC Testing', 
-      progress: 70, 
+    {
+      id: 'BP-2024-001',
+      name: 'EV Charger V2',
+      service: 'EMC Testing',
+      progress: 70,
       status: 'Testing',
       description: 'Advanced EV charging system with smart connectivity',
       createdAt: '2024-01-15',
       category: 'Electronics',
     },
-    { 
-      id: 'BP-2024-002', 
-      name: 'Controller X', 
-      service: 'Simulation', 
-      progress: 100, 
+    {
+      id: 'BP-2024-002',
+      name: 'Controller X',
+      service: 'Simulation',
+      progress: 100,
       status: 'Complete',
       description: 'High-performance microcontroller for industrial applications',
       createdAt: '2024-01-10',
       category: 'Electronics',
     },
-    { 
-      id: 'BP-2024-003', 
-      name: 'Battery Pack B1', 
-      service: 'Calibration', 
-      progress: 25, 
-      status: 'Awaiting',
-      description: 'Lithium-ion battery pack with advanced BMS',
-      createdAt: '2024-01-20',
-      category: 'Energy Storage',
+    {
+      id: 'BP-2026-003',
+      name: 'Transformer',
+      service: 'Environmental Testing',
+      progress: 50,
+      status: 'Testing',
+      description: '240kW Charging Station Transformer',
+      createdAt: '2026-01-01',
+      category: 'Power Equipment',
+    },
+    {
+      id: 'BP-2026-004',
+      name: 'HMI & Communication Interfaces',
+      service: 'Design V&V',
+      progress: 80,
+      status: 'Under Review',
+      description: '240kW Charging Station - HMI & Communication Interfaces Design Verification and Validation',
+      createdAt: '2026-01-01',
+      category: 'Control & Communication',
+    },
+    {
+      id: 'BP-2024-005',
+      name: 'IGBT',
+      service: 'Calibration',
+      progress: 10,
+      status: 'Planned',
+      description: '240kW - Temperature Sensors (IGBT, coolant, cabinet)',
+      createdAt: '2026-01-01',
+      category: 'Power Electronics',
+    },
+    {
+      id: 'BP-2024-006',
+      name: 'Circuit Breaker',
+      service: 'Product Debugging',
+      progress: 30,
+      status: 'Quoted',
+      description: '240kW - Power & Electrical Parts',
+      createdAt: '2026-01-01',
+      category: 'Electrical Protection',
     },
   ]))
 
   // Orders state
   const [orders, setOrders] = useState(() => loadFromStorage('techlink_orders', [
-    { 
+    {
       id: 'ORD-2024-001',
       productId: 'BP-2024-001',
       productName: 'EV Charger V2',
@@ -66,7 +96,7 @@ export const DataProvider = ({ children }) => {
       completedAt: '2024-01-18',
       total: 149.00,
     },
-    { 
+    {
       id: 'ORD-2024-002',
       productId: 'BP-2024-002',
       productName: 'Controller X',
@@ -75,15 +105,15 @@ export const DataProvider = ({ children }) => {
       cancelledAt: '2024-01-12',
       total: 199.00,
     },
-    { 
-      id: 'ORD-2024-003',
-      productId: 'BP-2024-003',
-      productName: 'Battery Pack B1',
-      service: 'Calibration',
-      status: 'Cancelled',
-      cancelledAt: '2024-01-22',
-      total: 79.00,
-    },
+    // {
+    //   id: 'ORD-2024-003',
+    //   productId: 'BP-2024-003',
+    //   productName: 'Battery Pack B1',
+    //   service: 'Calibration',
+    //   status: 'Cancelled',
+    //   cancelledAt: '2024-01-22',
+    //   total: 79.00,
+    // },
   ]))
 
   // Messages state
@@ -110,8 +140,8 @@ export const DataProvider = ({ children }) => {
 
   // Profile state
   const [profile, setProfile] = useState(() => loadFromStorage('techlink_profile', {
-    fullName: 'Sarah Chen',
-    username: 'sarah.chen',
+    fullName: 'Aditya Kumar Sahu',
+    username: 'aditya.sahu',
     gender: 'Female',
     language: 'English',
     companyName: 'TechCorp Industries',
@@ -119,13 +149,13 @@ export const DataProvider = ({ children }) => {
     country: 'United States',
     address: 'Millennium Techlink Private Limited, 17/18/19, 2nd Floor, Mahalaxmi Heights, Mumbai-Pune Road, Pimpri, Pune 411 018, Maharashtra, INDIA',
     phone: '+1 (555) 123-4567',
-    email: 'sarah.chen@techcorp.com',
+    email: 'aditya.sahu@techcorp.com',
     designation: 'Senior Engineer',
     membershipLevel: 'Premium',
     industry: 'Technology',
     accountType: 'Business',
     emailAddresses: [
-      { email: 'sarah.chen@techcorp.com', verified: true, addedAt: '1 month ago' }
+      { email: 'aditya.sahu@techcorp.com', verified: true, addedAt: '1 month ago' }
     ]
   }))
 

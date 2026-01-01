@@ -1,9 +1,15 @@
+// import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle, Clock, DollarSign, AlertCircle, HelpCircle, FileText, MessageCircle } from 'lucide-react'
 
 function SubmissionSuccess() {
   const navigate = useNavigate()
+
+  // useEffect(() => {
+  //   // 🔒 Testing flow is complete — clear session
+  //   localStorage.removeItem("testingRequestId");
+  // }, []);
 
   const nextSteps = [
     {
@@ -78,7 +84,7 @@ function SubmissionSuccess() {
           >
             <CheckCircle className="w-12 h-12 text-white" />
           </motion.div>
-          
+
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Submission Successful</h1>
           <p className="text-lg text-gray-600">Your testings is now in expert hands</p>
         </motion.div>
@@ -104,12 +110,12 @@ function SubmissionSuccess() {
           className="bg-white rounded-xl border border-gray-200 p-6 mb-8"
         >
           <h2 className="text-xl font-bold text-gray-900 mb-6">What Happens Next</h2>
-          
+
           <div className="space-y-4">
             {nextSteps.map((step, index) => {
               const Icon = step.icon
               const statusInfo = getStatusText(step.status)
-              
+
               return (
                 <motion.div
                   key={index}
@@ -118,14 +124,13 @@ function SubmissionSuccess() {
                   transition={{ delay: 0.5 + index * 0.1 }}
                   className={`flex items-start gap-4 p-4 border rounded-lg ${getStatusColor(step.color)}`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    step.status === 'completed' ? 'bg-green-500' :
-                    step.status === 'in-progress' ? 'bg-blue-500' :
-                    'bg-gray-300'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${step.status === 'completed' ? 'bg-green-500' :
+                      step.status === 'in-progress' ? 'bg-blue-500' :
+                        'bg-gray-300'
+                    }`}>
                     <Icon className="w-5 h-5 text-white" />
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-900">{step.title}</h3>

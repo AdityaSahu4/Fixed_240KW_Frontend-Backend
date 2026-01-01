@@ -14,7 +14,7 @@ function Blog() {
       readTime: '5 min read',
       category: 'Technology',
       image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop',
-      author: 'Sarah Chen',
+      author: 'Aditya Kumar Sahu',
       views: '2.5K',
       featured: true,
       content: `Artificial intelligence is transforming the landscape of electronic product testing and certification in unprecedented ways. As we move further into the digital age, AI-powered solutions are becoming essential tools for ensuring product quality, compliance, and market readiness.

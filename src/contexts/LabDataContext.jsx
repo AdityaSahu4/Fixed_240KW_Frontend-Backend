@@ -163,7 +163,7 @@ export const LabDataProvider = ({ children }) => {
   // Technicians state
   const [technicians, setTechnicians] = useState(() => loadFromStorage('techlink_technicians', [
     { id: 'VALOR01', name: 'John Smith', specialization: 'EMC Testing', status: 'Available' },
-    { id: 'VALOR02', name: 'Sarah Johnson', specialization: 'Safety Testing', status: 'Busy' },
+    { id: 'VALOR02', name: 'Aditya Kumar Sahu', specialization: 'Safety Testing', status: 'Busy' },
     { id: 'VALOR03', name: 'Mike Davis', specialization: 'Thermal Testing', status: 'Available' },
     { id: 'VALOR04', name: 'Emily Chen', specialization: 'EMC Testing', status: 'Available' },
   ]))
@@ -187,7 +187,7 @@ export const LabDataProvider = ({ children }) => {
       productName: 'IoT Sensor Hub',
       service: 'Safety Testing',
       technicianId: 'VALOR02',
-      technicianName: 'Sarah Johnson',
+      technicianName: 'Aditya Kumar Sahu',
       startTime: '2024-01-17T14:00:00',
       endTime: '2024-01-17T18:00:00',
       status: 'Scheduled',

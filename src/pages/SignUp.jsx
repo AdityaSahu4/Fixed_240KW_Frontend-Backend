@@ -1,11 +1,24 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { signup } from './services/authApi'
 import { Eye, EyeOff, User, Building, Mail, Lock, UserPlus, CheckCircle2 } from 'lucide-react'
 
 function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  // ✅ ADD – form data states
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [companyName, setCompanyName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  // ✅ ADD – navigation
+  const navigate = useNavigate()
+
   const [agreeToTerms, setAgreeToTerms] = useState(true)
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true)
 
@@ -30,6 +43,32 @@ function SignUp() {
     },
   }
 
+  // ✅ ADD – signup submit handler
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match")
+      return
+    }
+
+    try {
+      await signup({
+        first_name: firstName,
+        last_name: lastName,
+        company_name: companyName,
+        email,
+        password,
+      })
+
+      alert("Signup successful! Please login.")
+      navigate("/login")
+    } catch (err) {
+      alert(err.response?.data?.detail || "Signup failed")
+    }
+  }
+
+
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen py-12">
       <div className="container mx-auto px-6 max-w-2xl">
@@ -51,8 +90,9 @@ function SignUp() {
               </Link>
             </p>
           </motion.div>
-          
+
           <motion.form
+            onSubmit={handleSubmit}   // ✅ ADD THIS LINE
             variants={itemVariants}
             className="bg-white rounded-2xl shadow-xl p-8 space-y-4 border border-gray-100"
           >
@@ -65,6 +105,8 @@ function SignUp() {
                 <motion.input
                   whileFocus={{ scale: 1.02 }}
                   type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -76,11 +118,13 @@ function SignUp() {
                 <motion.input
                   whileFocus={{ scale: 1.02 }}
                   type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Building className="w-4 h-4 text-primary" />
@@ -89,10 +133,12 @@ function SignUp() {
               <motion.input
                 whileFocus={{ scale: 1.02 }}
                 type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
@@ -101,10 +147,12 @@ function SignUp() {
               <motion.input
                 whileFocus={{ scale: 1.02 }}
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" />
@@ -114,6 +162,8 @@ function SignUp() {
                 <motion.input
                   whileFocus={{ scale: 1.02 }}
                   type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all pr-12"
                 />
                 <motion.button
@@ -130,7 +180,7 @@ function SignUp() {
                 Use 8 or more characters with a mix of letters, numbers & symbols
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" />
@@ -140,6 +190,8 @@ function SignUp() {
                 <motion.input
                   whileFocus={{ scale: 1.02 }}
                   type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all pr-12"
                 />
                 <motion.button
@@ -156,7 +208,7 @@ function SignUp() {
                 Use 8 or more characters with a mix of letters, numbers & symbols
               </p>
             </div>
-            
+
             <div className="space-y-3">
               <motion.label
                 whileHover={{ scale: 1.02 }}
@@ -194,7 +246,7 @@ function SignUp() {
                 </span>
               </motion.label>
             </div>
-            
+
             <motion.div
               whileHover={{ scale: 1.02 }}
               className="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg bg-gray-50 cursor-pointer"
@@ -212,7 +264,7 @@ function SignUp() {
                 <span className="text-xs text-gray-500">reCAPTCHA</span>
               </div>
             </motion.div>
-            
+
             <motion.button
               whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}
               whileTap={{ scale: 0.98 }}
@@ -223,7 +275,7 @@ function SignUp() {
               Sign up
             </motion.button>
           </motion.form>
-          
+
           <motion.div
             variants={itemVariants}
             className="text-center"

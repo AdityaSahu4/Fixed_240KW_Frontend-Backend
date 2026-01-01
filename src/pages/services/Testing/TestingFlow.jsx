@@ -6,7 +6,7 @@ import {
   saveTestingStandards,
   submitTestingRequest
 } from "../../services/testingApi"
-import { fetchFullTestingRequest } from "../../services/testingApi"
+import api from "../../services/api"
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -56,7 +56,7 @@ function TestingFlow() {
     selectedStandards: [],
 
     // Lab Selection
-    selectedLab: [],
+    selectedLabs: [],
 
     // Documents
     uploadedDocs: {}
@@ -77,52 +77,37 @@ function TestingFlow() {
     'lab-selection',
   ]
   const { step } = useParams()
-  // Create / restore testing request
-  // useEffect(() => {
-  //   const existingId = localStorage.getItem("testingRequestId")
 
-  //   if (existingId) {
-  //     setTestingRequestId(Number(existingId))
-  //     return
-  //   }
-
-  //   async function init() {
-  //     try {
-  //       const res = await startTestingRequest()
-  //       setTestingRequestId(res.id)
-  //       localStorage.setItem("testingRequestId", res.id)
-  //     } catch (err) {
-  //       console.error("Failed to start testing request", err)
-  //     }
-  //   }
-
-  //   init()
-  // }, [])
+  // Create / restore testing request - ONLY ONCE
   useEffect(() => {
     const init = async () => {
       const storedId = localStorage.getItem("testingRequestId")
 
       if (storedId) {
         try {
+          // Verify the ID still exists in backend
           await api.get(`/testing-request/${storedId}`)
           setTestingRequestId(Number(storedId))
+          console.log("✅ Restored testing_request_id:", storedId)
           return
         } catch {
+          // ID is stale → discard it
+          console.warn("⚠️ Stale testing_request_id found, creating new one")
           localStorage.removeItem("testingRequestId")
         }
       }
 
+      // Create new testing request
       const res = await startTestingRequest()
       setTestingRequestId(res.id)
       localStorage.setItem("testingRequestId", res.id)
+      console.log("✅ Created new testing_request_id:", res.id)
     }
 
     init()
-  }, [])
+  }, []) // Empty dependency array = runs ONCE on mount
 
-
-
-  // Sync URL step ↔ currentStep (MANDATORY)
+  // Sync URL step ↔ currentStep
   useEffect(() => {
     if (!step) return
 
@@ -132,12 +117,13 @@ function TestingFlow() {
     }
   }, [step])
 
-
-
   const CurrentStepComponent = steps[currentStep]?.component
 
   const handleNext = async () => {
-    if (!testingRequestId) return
+    if (!testingRequestId) {
+      alert("Testing request not initialized. Please refresh the page.")
+      return
+    }
 
     try {
       // STEP 1 – Product
@@ -162,7 +148,7 @@ function TestingFlow() {
           preferred_date: formData.preferredDate,
           notes: formData.additionalNotes
         })
-
+        console.log("✅ Saved product details for testing_request_id:", testingRequestId)
       }
 
       // STEP 2 – Technical Documents
@@ -180,6 +166,7 @@ function TestingFlow() {
           await saveTechnicalDocuments(testingRequestId, {
             documents: documentsPayload
           })
+          console.log("✅ Saved technical documents for testing_request_id:", testingRequestId)
         } catch (err) {
           console.error("Failed to save technical documents", err)
           alert("Failed to save documents")
@@ -194,6 +181,7 @@ function TestingFlow() {
             test_type: formData.testType,
             selected_tests: formData.selectedTests
           })
+          console.log("✅ Saved testing requirements for testing_request_id:", testingRequestId)
         } catch (err) {
           console.error("Failed to save testing requirements", err)
           alert("Failed to save testing requirements")
@@ -208,6 +196,7 @@ function TestingFlow() {
             regions: formData.selectedRegions,
             standards: formData.selectedStandards
           })
+          console.log("✅ Saved testing standards for testing_request_id:", testingRequestId)
         } catch (err) {
           console.error("Failed to save testing standards", err)
           alert("Failed to save testing standards")
@@ -229,7 +218,11 @@ function TestingFlow() {
             selected_labs: formData.selectedLabs,
             remarks: formData.additionalNotes
           })
+          console.log("✅ Submitted testing request:", testingRequestId)
 
+          // Clear the stored ID after successful submission
+          localStorage.removeItem("testingRequestId")
+          
           navigate("/services/testing/submission-success")
           return
 
@@ -240,14 +233,7 @@ function TestingFlow() {
         }
       }
 
-
-
-      // Navigate
-      if (currentStep === steps.length - 1) {
-        await handleSubmit()
-        return
-      }
-
+      // Navigate to next step
       const next = currentStep + 1
       setCurrentStep(next)
       navigate(`/services/testing/${stepPaths[next]}`)
@@ -257,7 +243,6 @@ function TestingFlow() {
       alert("Failed to save step")
     }
   }
-
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -272,16 +257,6 @@ function TestingFlow() {
     localStorage.setItem('testing_draft', JSON.stringify(formData))
     alert('Draft saved successfully!')
   }
-
-  const handleSubmit = async () => {
-    await submitTestingRequest(testingRequestId, {
-      selected_labs: formData.selectedLabs,
-      remarks: formData.additionalNotes
-    })
-
-    navigate("/services/testing/submission-success")
-  }
-
 
   const updateFormData = (updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
@@ -347,6 +322,7 @@ function TestingFlow() {
                   <CurrentStepComponent
                     formData={formData}
                     updateFormData={updateFormData}
+                    testingRequestId={testingRequestId} // ✅ PASS ID TO ALL COMPONENTS
                   />
                 )}
               </motion.div>
@@ -373,7 +349,8 @@ function TestingFlow() {
 
               <button
                 onClick={handleNext}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                disabled={!testingRequestId}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {currentStep === steps.length - 1 ? 'Submit' : 'Next'}
                 <ArrowRight className="w-4 h-4" />
@@ -394,4 +371,3 @@ function TestingFlow() {
 }
 
 export default TestingFlow
-
