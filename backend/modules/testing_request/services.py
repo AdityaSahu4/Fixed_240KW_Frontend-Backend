@@ -1,4 +1,4 @@
-# services.py
+# modules/testing_request/services.py
 from sqlalchemy.orm import Session
 from .models import (
     TestingRequest,
@@ -15,13 +15,60 @@ from .schemas import (
     TestingStandardsSchema,
     LabSelectionSchema
 )
+from datetime import datetime, timedelta
+from typing import Optional, List
+
+
+def cleanup_old_drafts(db: Session, hours: int = 24):
+    """
+    Delete draft testing requests older than X hours
+    This helps keep your database clean
+    """
+    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+    
+    old_drafts = db.query(TestingRequest).filter(
+        TestingRequest.status == "draft",
+        TestingRequest.created_at < cutoff_time
+    ).all()
+    
+    count = len(old_drafts)
+    
+    for draft in old_drafts:
+        # Delete related records first (due to foreign keys)
+        db.query(ProductDetails).filter(
+            ProductDetails.testing_request_id == draft.id
+        ).delete()
+        
+        db.query(TechnicalDocument).filter(
+            TechnicalDocument.testing_request_id == draft.id
+        ).delete()
+        
+        db.query(TestingRequirements).filter(
+            TestingRequirements.testing_request_id == draft.id
+        ).delete()
+        
+        db.query(TestingStandards).filter(
+            TestingStandards.testing_request_id == draft.id
+        ).delete()
+        
+        db.query(LabSelection).filter(
+            LabSelection.testing_request_id == draft.id
+        ).delete()
+        
+        # Finally delete the draft itself
+        db.delete(draft)
+    
+    db.commit()
+    return count
+
 
 def create_testing_request(db: Session):
-    tr = TestingRequest(status="draft")  # ✅ Changed from "submitted" to "draft"
+    tr = TestingRequest(status="draft")
     db.add(tr)
     db.commit()
     db.refresh(tr)
     return tr
+
 
 def save_draft(db, testing_request_id: int):
     tr = db.query(TestingRequest).filter(
@@ -88,6 +135,73 @@ def save_technical_documents(
 
     db.commit()
 
+
+# ✅ NEW: Document management functions
+
+def save_document_info(
+    db: Session,
+    testing_request_id: int,
+    doc_type: str,
+    file_name: str,
+    file_path: str,
+    file_size: int
+) -> TechnicalDocument:
+    """
+    Save document information to database
+    """
+    document = TechnicalDocument(
+        testing_request_id=testing_request_id,
+        doc_type=doc_type,
+        file_name=file_name,
+        file_path=file_path,
+        file_size=file_size
+    )
+    
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    return document
+
+
+def get_testing_request_documents(
+    db: Session,
+    testing_request_id: int
+) -> List[TechnicalDocument]:
+    """
+    Get all documents for a testing request
+    """
+    return db.query(TechnicalDocument).filter(
+        TechnicalDocument.testing_request_id == testing_request_id
+    ).order_by(TechnicalDocument.uploaded_at.desc()).all()
+
+
+def get_document_by_id(
+    db: Session,
+    doc_id: int
+) -> Optional[TechnicalDocument]:
+    """
+    Get a document by ID
+    """
+    return db.query(TechnicalDocument).filter(
+        TechnicalDocument.id == doc_id
+    ).first()
+
+
+def delete_document(
+    db: Session,
+    doc_id: int
+) -> bool:
+    """
+    Delete a document from database
+    """
+    document = get_document_by_id(db, doc_id)
+    if document:
+        db.delete(document)
+        db.commit()
+        return True
+    return False
+
+
 def save_testing_requirements(db: Session, testing_request_id: int, payload: TestingRequirementsSchema):
     tr = db.query(TestingRequirements).filter(
         TestingRequirements.testing_request_id == testing_request_id
@@ -102,6 +216,7 @@ def save_testing_requirements(db: Session, testing_request_id: int, payload: Tes
 
     db.commit()
 
+
 def save_testing_standards(db: Session, testing_request_id: int, payload: TestingStandardsSchema):
     ts = db.query(TestingStandards).filter(
         TestingStandards.testing_request_id == testing_request_id
@@ -115,6 +230,7 @@ def save_testing_standards(db: Session, testing_request_id: int, payload: Testin
     ts.standards = payload.standards
 
     db.commit()
+
 
 def submit_request(db: Session, testing_request_id: int, payload: LabSelectionSchema):
     tr = db.query(TestingRequest).filter(
@@ -142,9 +258,10 @@ def submit_request(db: Session, testing_request_id: int, payload: LabSelectionSc
     tr.status = "submitted"
     db.commit()
 
+
 def get_full_testing_request(db: Session, testing_request_id: int):
     """
-    ✅ FIXED: Returns data structure matching frontend expectations
+    Returns data structure matching frontend expectations
     """
     tr = db.query(TestingRequest).filter(
         TestingRequest.id == testing_request_id
@@ -169,7 +286,6 @@ def get_full_testing_request(db: Session, testing_request_id: int):
         testing_request_id=testing_request_id
     ).first()
 
-    # ✅ Convert SQLAlchemy models to dicts with proper key names
     return {
         "id": tr.id,
         "status": tr.status,

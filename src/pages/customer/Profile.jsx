@@ -17,39 +17,38 @@ function Profile() {
       { email: profile?.email || '', verified: true, addedAt: '1 month ago' }
     ]
   })
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
-  const [imagePreview, setImagePreview] = useState(profile?.profileImage || null)
+  
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [imagePreview, setImagePreview] = useState(profile?.profileImage || null)
   const fileInputRef = useRef(null)
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value })
-    setSaveSuccess(false)
   }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select a valid image file')
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB')
         return
       }
 
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         const imageDataUrl = reader.result
         setImagePreview(imageDataUrl)
         setFormData({ ...formData, profileImage: imageDataUrl })
-        setSaveSuccess(false)
+        
+        // Auto-save image
+        setProfile({ ...formData, profileImage: imageDataUrl })
+        toast.success('Profile image updated!')
       }
       reader.readAsDataURL(file)
     }
@@ -58,10 +57,11 @@ function Profile() {
   const handleRemoveImage = () => {
     setImagePreview(null)
     setFormData({ ...formData, profileImage: null })
+    setProfile({ ...formData, profileImage: null })
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-    setSaveSuccess(false)
+    toast.success('Profile image removed')
   }
 
   const handleAddEmail = () => {
@@ -74,14 +74,12 @@ function Profile() {
       ...formData,
       emailAddresses: [...formData.emailAddresses, newEmail]
     })
-    setSaveSuccess(false)
   }
 
   const handleRemoveEmail = (index) => {
     if (formData.emailAddresses.length > 1) {
       const newEmails = formData.emailAddresses.filter((_, i) => i !== index)
       setFormData({ ...formData, emailAddresses: newEmails })
-      setSaveSuccess(false)
     } else {
       toast.error('You must have at least one email address')
     }
@@ -91,7 +89,6 @@ function Profile() {
     const newEmails = [...formData.emailAddresses]
     newEmails[index].email = value
     setFormData({ ...formData, emailAddresses: newEmails })
-    setSaveSuccess(false)
   }
 
   const handleSave = () => {
@@ -100,7 +97,7 @@ function Profile() {
       toast.error('Please enter your full name')
       return
     }
-    
+
     const validEmails = formData.emailAddresses.filter(e => e.email.trim())
     if (validEmails.length === 0) {
       toast.error('Please add at least one email address')
@@ -108,22 +105,30 @@ function Profile() {
     }
 
     setIsSaving(true)
-    // Simulate API call
     setTimeout(() => {
       setProfile({ 
         ...formData, 
         profileImage: imagePreview,
-        email: formData.emailAddresses[0].email // Keep primary email in profile
+        email: formData.emailAddresses[0].email
       })
       setIsSaving(false)
-      setSaveSuccess(true)
       setIsEditing(false)
       toast.success('Profile saved successfully!')
-      setTimeout(() => setSaveSuccess(false), 3000)
     }, 500)
   }
 
-  // Get current date
+  const handleCancel = () => {
+    // Reset to original profile data
+    setFormData({
+      ...profile,
+      emailAddresses: profile?.emailAddresses || [
+        { email: profile?.email || '', verified: true, addedAt: '1 month ago' }
+      ]
+    })
+    setImagePreview(profile?.profileImage || null)
+    setIsEditing(false)
+  }
+
   const getCurrentDate = () => {
     const date = new Date()
     const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }
@@ -133,16 +138,16 @@ function Profile() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-          <motion.div
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl p-6"
-          >
+      >
         <h1 className="text-2xl font-bold text-gray-800">
           Welcome, {formData.fullName?.split(' ')[0] || 'User'}
         </h1>
         <p className="text-sm text-gray-600 mt-1">{getCurrentDate()}</p>
-          </motion.div>
+      </motion.div>
 
       {/* Profile Header with Image and Edit Button */}
       <motion.div
@@ -156,25 +161,50 @@ function Profile() {
             {/* Profile Image */}
             <div className="relative">
               <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 shadow-md">
-              {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                     <User className="w-10 h-10 text-white" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Image Edit Buttons - Only show when editing */}
+              {isEditing && (
+                <div className="absolute -bottom-2 -right-2 flex gap-1">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600"
+                  >
+                    <Camera className="w-3 h-3" />
+                  </motion.button>
+                  {imagePreview && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleRemoveImage}
+                      className="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </motion.button>
+                  )}
                 </div>
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-          />
+              )}
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
             </div>
 
             {/* Name and Email */}
@@ -184,16 +214,42 @@ function Profile() {
             </div>
           </div>
 
-          {/* Edit Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsEditing(!isEditing)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-          >
-            <Edit2 className="w-4 h-4" />
-            Edit
-          </motion.button>
+          {/* Edit/Save/Cancel Buttons */}
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Saving...' : 'Save'}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCancel}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </motion.button>
+              </>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </motion.button>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -207,6 +263,7 @@ function Profile() {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-4">
+            {/* Full Name - EDITABLE */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Full Name / Username
@@ -215,11 +272,12 @@ function Profile() {
                 value={formData.fullName || ''}
                 onChange={(e) => handleChange('fullName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                placeholder="Your First Name"
+                placeholder="Your Full Name"
                 disabled={!isEditing}
               />
             </div>
 
+            {/* Gender - EDITABLE DROPDOWN */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Gender</label>
               <select
@@ -228,7 +286,7 @@ function Profile() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                 disabled={!isEditing}
               >
-                <option value="">Gender</option>
+                <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
@@ -236,6 +294,7 @@ function Profile() {
               </select>
             </div>
 
+            {/* Language - EDITABLE DROPDOWN */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Language</label>
               <select
@@ -244,15 +303,23 @@ function Profile() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                 disabled={!isEditing}
               >
-                <option value="">Language</option>
+                <option value="">Select Language</option>
                 <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
                 <option value="Spanish">Spanish</option>
                 <option value="French">French</option>
                 <option value="German">German</option>
-                <option value="Chinese">Chinese</option>
+                <option value="Chinese">Chinese (Mandarin)</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Korean">Korean</option>
+                <option value="Arabic">Arabic</option>
+                <option value="Portuguese">Portuguese</option>
+                <option value="Russian">Russian</option>
+                <option value="Italian">Italian</option>
               </select>
             </div>
 
+            {/* Company Name - EDITABLE */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Company Name</label>
               <input
@@ -264,6 +331,7 @@ function Profile() {
               />
             </div>
 
+            {/* Designation - EDITABLE */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <Briefcase className="w-4 h-4" />
@@ -278,6 +346,7 @@ function Profile() {
               />
             </div>
 
+            {/* Industry - PERMANENT (from signup) */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
@@ -285,16 +354,16 @@ function Profile() {
               </label>
               <input
                 value={formData.industry || ''}
-                onChange={(e) => handleChange('industry', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                placeholder="Industry"
-                disabled={!isEditing}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                placeholder="Industry (Set during signup)"
               />
             </div>
           </div>
 
           {/* Right Column */}
           <div className="space-y-4">
+            {/* User ID - PERMANENT */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">User ID</label>
               <input
@@ -305,6 +374,7 @@ function Profile() {
               />
             </div>
 
+            {/* Country - EDITABLE DROPDOWN */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Country</label>
               <select
@@ -313,7 +383,7 @@ function Profile() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                 disabled={!isEditing}
               >
-                <option value="">Country</option>
+                <option value="">Select Country</option>
                 <option value="United States">United States</option>
                 <option value="United Kingdom">United Kingdom</option>
                 <option value="Canada">Canada</option>
@@ -321,9 +391,21 @@ function Profile() {
                 <option value="India">India</option>
                 <option value="Germany">Germany</option>
                 <option value="France">France</option>
+                <option value="China">China</option>
+                <option value="Japan">Japan</option>
+                <option value="South Korea">South Korea</option>
+                <option value="Brazil">Brazil</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Spain">Spain</option>
+                <option value="Italy">Italy</option>
+                <option value="Netherlands">Netherlands</option>
+                <option value="Singapore">Singapore</option>
+                <option value="UAE">United Arab Emirates</option>
+                <option value="Saudi Arabia">Saudi Arabia</option>
               </select>
             </div>
 
+            {/* Address - EDITABLE */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Address</label>
               <input
@@ -335,6 +417,7 @@ function Profile() {
               />
             </div>
 
+            {/* Phone - EDITABLE */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Phone No</label>
               <input
@@ -346,6 +429,7 @@ function Profile() {
               />
             </div>
 
+            {/* Membership Level - PERMANENT (from signup) */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <Award className="w-4 h-4" />
@@ -353,13 +437,13 @@ function Profile() {
               </label>
               <input
                 value={formData.membershipLevel || ''}
-                onChange={(e) => handleChange('membershipLevel', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                placeholder="Membership Level"
-                disabled={!isEditing}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                placeholder="Membership Level (Set during signup)"
               />
             </div>
 
+            {/* Account Type - PERMANENT (from signup) */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -367,10 +451,9 @@ function Profile() {
               </label>
               <input
                 value={formData.accountType || ''}
-                onChange={(e) => handleChange('accountType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                placeholder="Account Type"
-                disabled={!isEditing}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                placeholder="Account Type (Set during signup)"
               />
             </div>
           </div>
@@ -384,7 +467,7 @@ function Profile() {
         transition={{ delay: 0.3 }}
         className="bg-white rounded-xl border border-gray-200 p-6"
       >
-        <h3 className="text-lg font-bold text-gray-800 mb-4">My email Address</h3>
+        <h3 className="text-lg font-bold text-gray-800 mb-4">My Email Addresses</h3>
         
         <div className="space-y-3">
           {formData.emailAddresses?.map((emailObj, index) => (
@@ -442,40 +525,8 @@ function Profile() {
           </motion.button>
         )}
       </motion.div>
-
-      {/* Save Button */}
-      {isEditing && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex justify-center"
-        >
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
-        </motion.div>
-      )}
-
-      {/* Success Message */}
-      {saveSuccess && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="fixed bottom-8 right-8 px-6 py-3 bg-green-500 text-white rounded-lg shadow-lg flex items-center gap-2"
-        >
-          <CheckCircle className="w-5 h-5" />
-          Profile saved successfully!
-      </motion.div>
-      )}
     </div>
   )
 }
 
 export default Profile
-
-

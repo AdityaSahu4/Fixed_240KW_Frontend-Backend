@@ -21,6 +21,11 @@ function ProductDetails() {
     productDescription: '',
   })
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState(null) // 'success' or 'error'
+
+  const API_BASE_URL = 'http://localhost:8000' // ✅ Change to your backend URL
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -28,9 +33,113 @@ function ProductDetails() {
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Form submitted:', formData)
+    setIsSubmitting(true)
+    setSubmitStatus(null)
+
+    try {
+      const payload = {
+        organization_name: formData.organizationName,
+        contact_person: formData.contactPerson,
+        designation: formData.designation,
+        email: formData.email,
+        mobile_no: formData.mobileNo,
+        address: formData.address,
+        preferable_dates: formData.preferableDates || null,
+        industry: formData.industry,
+        services: formData.services,
+        product_name: formData.productName,
+        product_quantity: parseInt(formData.productQuantity) || 1,
+        product_specification: formData.productSpecification || null,
+        product_part_no: formData.productPartNo || null,
+        standards_required: formData.standardsRequired || null,
+        product_description: formData.productDescription || null,
+        submission_type: 'submit'
+      }
+
+      const response = await fetch(`${API_BASE_URL}/product-details/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form')
+      }
+
+      const data = await response.json()
+      console.log('✅ Form submitted successfully:', data)
+      
+      setSubmitStatus('success')
+      
+      // Redirect to home page after 2 seconds
+      setTimeout(() => {
+        window.location.href = 'http://localhost:5173/services/testing/submission-success'
+      }, 2000)
+
+    } catch (error) {
+      console.error('❌ Error submitting form:', error)
+      setSubmitStatus('error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleGetQuote = async () => {
+    setIsSubmitting(true)
+    setSubmitStatus(null)
+
+    try {
+      const payload = {
+        organization_name: formData.organizationName,
+        contact_person: formData.contactPerson,
+        designation: formData.designation,
+        email: formData.email,
+        mobile_no: formData.mobileNo,
+        address: formData.address,
+        preferable_dates: formData.preferableDates || null,
+        industry: formData.industry,
+        services: formData.services,
+        product_name: formData.productName,
+        product_quantity: parseInt(formData.productQuantity) || 1,
+        product_specification: formData.productSpecification || null,
+        product_part_no: formData.productPartNo || null,
+        standards_required: formData.standardsRequired || null,
+        product_description: formData.productDescription || null,
+        submission_type: 'quote'
+      }
+
+      const response = await fetch(`${API_BASE_URL}/product-details/quote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to request quote')
+      }
+
+      const data = await response.json()
+      console.log('✅ Quote requested successfully:', data)
+      
+      setSubmitStatus('success')
+      
+      // Redirect to home page after 2 seconds
+      setTimeout(() => {
+        window.location.href = 'http://localhost:5173/pricing'
+      }, 2000)
+
+    } catch (error) {
+      console.error('❌ Error requesting quote:', error)
+      setSubmitStatus('error')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const containerVariants = {
@@ -74,6 +183,27 @@ function ProductDetails() {
           </p>
         </motion.div>
         
+        {/* Success/Error Messages */}
+        {submitStatus === 'success' && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-center"
+          >
+            ✅ Successfully submitted! Redirecting to home page...
+          </motion.div>
+        )}
+        
+        {submitStatus === 'error' && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-center"
+          >
+            ❌ Failed to submit. Please try again.
+          </motion.div>
+        )}
+        
         <motion.form
           variants={containerVariants}
           initial="hidden"
@@ -99,6 +229,7 @@ function ProductDetails() {
                   name="organizationName"
                   value={formData.organizationName}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -113,6 +244,7 @@ function ProductDetails() {
                   name="contactPerson"
                   value={formData.contactPerson}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -127,6 +259,7 @@ function ProductDetails() {
                   name="designation"
                   value={formData.designation}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -141,6 +274,7 @@ function ProductDetails() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -155,6 +289,7 @@ function ProductDetails() {
                   name="mobileNo"
                   value={formData.mobileNo}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -169,6 +304,7 @@ function ProductDetails() {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -197,6 +333,7 @@ function ProductDetails() {
                   name="industry"
                   value={formData.industry}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 >
                   <option value="">Select Industry</option>
@@ -225,6 +362,7 @@ function ProductDetails() {
                   name="services"
                   value={formData.services}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 >
                   <option value="">Select Service</option>
@@ -247,6 +385,7 @@ function ProductDetails() {
                   name="productName"
                   value={formData.productName}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -261,6 +400,8 @@ function ProductDetails() {
                   name="productQuantity"
                   value={formData.productQuantity}
                   onChange={handleChange}
+                  required
+                  min="1"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
               </div>
@@ -333,19 +474,22 @@ function ProductDetails() {
               whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(37, 99, 235, 0.3)" }}
               whileTap={{ scale: 0.95 }}
               type="submit"
-              className="px-8 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg hover:shadow-lg transition-all font-medium flex items-center gap-2"
+              disabled={isSubmitting}
+              className="px-8 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg hover:shadow-lg transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-5 h-5" />
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="button"
-              className="px-8 py-3 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg hover:shadow-lg transition-all font-medium flex items-center gap-2"
+              onClick={handleGetQuote}
+              disabled={isSubmitting}
+              className="px-8 py-3 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg hover:shadow-lg transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="w-5 h-5" />
-              Get Quote
+              {isSubmitting ? 'Processing...' : 'Get Quote'}
             </motion.button>
           </motion.div>
         </motion.form>

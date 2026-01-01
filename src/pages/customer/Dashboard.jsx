@@ -2,21 +2,38 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useData } from '../../contexts/DataContext'
-import { 
-  Package, Search, Plus, Edit, MessageCircle, Eye 
+import {
+  Package, Search, Plus, Edit, MessageCircle, Eye
 } from 'lucide-react'
+import { useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 function Dashboard() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!localStorage.getItem("token")) {
+      navigate("/login")
+    }
+  }, [navigate])
+
   const { products, messages } = useData()
   const [searchQuery, setSearchQuery] = useState('')
-  
-  const activeProducts = products.filter(p => p.status !== 'Complete' && p.status !== 'Cancelled')
-  const completedCount = products.filter(p => p.status === 'Complete').length
-  const inProgressCount = products.filter(p => p.status !== 'Complete' && p.status !== 'Cancelled' && p.status !== 'Awaiting').length
+
+  // Filter products based on search query
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.service.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const activeProducts = filteredProducts.filter(p => p.status !== 'Complete' && p.status !== 'Cancelled')
+  const completedCount = filteredProducts.filter(p => p.status === 'Complete').length
+  const inProgressCount = filteredProducts.filter(p => p.status !== 'Complete' && p.status !== 'Cancelled' && p.status !== 'Awaiting').length
   const activeFlowsCount = activeProducts.length
 
-  const certificationRate = products.length > 0 
-    ? Math.round((completedCount / products.length) * 100) 
+  const certificationRate = filteredProducts.length > 0
+    ? Math.round((completedCount / filteredProducts.length) * 100)
     : 0
 
   const workflowActivity = 84 // Mock data
@@ -32,7 +49,7 @@ function Dashboard() {
       { label: 'Report Submitted', completed: product.progress >= 90 },
       { label: 'Completed', completed: product.status === 'Complete' },
     ]
-    
+
     // Add dates only to completed stages
     if (product.progress >= 10) stages[0].date = '10 Oct 2025'
     if (product.progress >= 10) stages[0].time = '10:00 am'
@@ -50,7 +67,7 @@ function Dashboard() {
     if (product.progress >= 90) stages[6].time = '02:00 pm'
     if (product.status === 'Complete') stages[7].date = '20 Oct 2025'
     if (product.status === 'Complete') stages[7].time = '09:00 am'
-    
+
     return stages
   }
 
@@ -66,7 +83,7 @@ function Dashboard() {
   }
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Complete': return 'bg-green-100 text-green-700'
       case 'Testing': return 'bg-blue-100 text-blue-700'
       case 'Awaiting': return 'bg-yellow-100 text-yellow-700'
@@ -83,19 +100,22 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
             />
           </div>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+          <Link
+            to="/services/select"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" />
             Add Product
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -106,7 +126,7 @@ function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl border border-gray-200 p-6"
         >
-          <div className="text-3xl font-bold text-gray-800">{products.length}</div>
+          <div className="text-3xl font-bold text-gray-800">{filteredProducts.length}</div>
           <div className="text-sm text-gray-600 mt-1">Total Products</div>
         </motion.div>
         <motion.div
@@ -159,13 +179,13 @@ function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.slice(0, 5).map((product, index) => (
+                  {filteredProducts.slice(0, 5).map((product, index) => (
                     <tr key={product.id} className="border-b border-gray-200 last:border-b-0">
                       <td className="px-6 py-6" colSpan="6">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-4 flex-1">
                             <span className="text-gray-600 font-medium">{index + 1}</span>
-                            
+
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getProductIcon(index)}`}>
                                 <span className="font-bold text-sm">
@@ -178,10 +198,10 @@ function Dashboard() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-8">
                             <div className="text-sm text-gray-700 min-w-[100px]">{product.service}</div>
-                            
+
                             <div className="flex items-center gap-2 min-w-[120px]">
                               <div className="flex-1 h-2 bg-gray-200 rounded-full">
                                 <div
@@ -191,13 +211,13 @@ function Dashboard() {
                               </div>
                               <span className="text-sm font-medium">{product.progress}%</span>
                             </div>
-                            
+
                             <div className="min-w-[90px]">
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(product.status)}`}>
                                 {product.status}
                               </span>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                               <Link
                                 to={`/customer/products/${product.id}`}
@@ -205,10 +225,16 @@ function Dashboard() {
                               >
                                 View
                               </Link>
-                              <button className="text-gray-600 hover:text-gray-700">
+                              <button 
+                                onClick={() => navigate(`/customer/products/${product.id}`)}
+                                className="text-gray-600 hover:text-gray-700"
+                              >
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button className="text-gray-600 hover:text-gray-700 relative">
+                              <button 
+                                onClick={() => navigate('/customer/messages')}
+                                className="text-gray-600 hover:text-gray-700 relative"
+                              >
                                 <MessageCircle className="w-4 h-4" />
                                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                               </button>
@@ -216,35 +242,47 @@ function Dashboard() {
                           </div>
                         </div>
 
-                        {/* Timeline */}
-                        <div className="flex items-center justify-between relative ml-8">
-                          {getProgressStages(product).map((stage, idx) => (
-                            <div key={idx} className="flex flex-col items-center relative z-10 flex-1">
-                              <div
-                                className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 ${
-                                  stage.completed ? 'bg-black' : 'bg-white border-2 border-gray-300'
-                                }`}
-                              >
-                                {stage.completed && (
-                                  <div className="w-2 h-2 bg-white rounded-full" />
-                                )}
-                              </div>
-                              <div className="text-xs font-medium text-center whitespace-nowrap">
-                                {stage.label}
-                              </div>
-                              {stage.date && (
-                                <>
-                                  <div className="text-xs text-gray-500 text-center mt-1">
-                                    {stage.date}
+                        {/* Timeline - PERFECT ALIGNMENT FIX */}
+                        <div className="ml-8">
+                          <div className="relative">
+                            {/* Connecting Line - Behind everything */}
+                            <div className="absolute left-0 right-0 h-[2px] bg-gray-300 top-[11px]" />
+                            
+                            {/* Timeline Items */}
+                            <div className="flex items-start justify-between relative">
+                              {getProgressStages(product).map((stage, idx) => (
+                                <div key={idx} className="flex flex-col items-center flex-1 relative">
+                                  {/* Circle - Perfectly centered on line */}
+                                  <div className="mb-2 relative z-10">
+                                    {stage.completed ? (
+                                      <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center">
+                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                      </div>
+                                    ) : (
+                                      <div className="w-6 h-6 rounded-full bg-white border-[3px] border-gray-300" />
+                                    )}
                                   </div>
-                                  <div className="text-xs text-gray-500 text-center">
-                                    {stage.time}
+                                  
+                                  {/* Label */}
+                                  <div className="text-xs font-medium text-center whitespace-nowrap px-1">
+                                    {stage.label}
                                   </div>
-                                </>
-                              )}
+                                  
+                                  {/* Date and Time */}
+                                  {stage.date && (
+                                    <>
+                                      <div className="text-xs text-gray-500 text-center mt-1 whitespace-nowrap">
+                                        {stage.date}
+                                      </div>
+                                      <div className="text-xs text-gray-500 text-center whitespace-nowrap">
+                                        {stage.time}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                          <div className="absolute top-3 left-0 right-0 h-0.5 bg-gray-300 -z-0" />
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -265,7 +303,7 @@ function Dashboard() {
               <div className="p-6 border-b">
                 <h3 className="text-xl font-bold">Active Workflows</h3>
               </div>
-              
+
               <div className="p-6 space-y-4">
                 {activeProducts.slice(0, 3).map((product, index) => (
                   <div
@@ -285,7 +323,7 @@ function Dashboard() {
                         In Progress
                       </span>
                     </div>
-                    
+
                     <div className="mb-3">
                       <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-gray-600">Progress</span>
@@ -300,7 +338,7 @@ function Dashboard() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <Link
                         to={`/customer/products/${product.id}`}
@@ -330,7 +368,7 @@ function Dashboard() {
             className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6"
           >
             <h3 className="text-lg font-bold mb-6">Progress Analytics</h3>
-            
+
             <div className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -346,7 +384,7 @@ function Dashboard() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Workflow Activity</span>
@@ -370,5 +408,3 @@ function Dashboard() {
 }
 
 export default Dashboard
-
-

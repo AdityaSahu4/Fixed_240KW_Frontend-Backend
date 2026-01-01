@@ -55,4 +55,3 @@ class TestingStandardsSchema(BaseModel):
 class LabSelectionSchema(BaseModel):
     selected_labs: List[str]
     remarks: Optional[str] = None
-

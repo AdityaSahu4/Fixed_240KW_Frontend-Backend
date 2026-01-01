@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useData } from '../../contexts/DataContext'
-import { Plus, Search, Package, Edit, Eye, Trash2 } from 'lucide-react'
+import { Plus, Search, Package, Eye, Trash2, X } from 'lucide-react'
 
 function Products() {
   const navigate = useNavigate()
-  const { products, deleteProduct } = useData()
+  const { products, addProduct, deleteProduct } = useData()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [newProduct, setNewProduct] = useState({
@@ -16,20 +16,60 @@ function Products() {
     category: 'Electronics',
   })
 
+  const serviceOptions = [
+    'EMC Testing',
+    'Simulation',
+    'Calibration',
+    'Environmental Testing',
+    'Safety Testing',
+    'Performance Testing',
+    'Design V&V',
+    'Product Debugging',
+    'Certification',
+  ]
+
+  const categoryOptions = [
+    'Electronics',
+    'Energy Storage',
+    'Automotive',
+    'Industrial',
+    'Consumer Goods',
+    'Medical Devices',
+  ]
+
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.service.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleAddProduct = () => {
-    if (!newProduct.name || !newProduct.service) {
-      alert('Please fill in all required fields')
+  const handleAddProduct = (e) => {
+    e.preventDefault()
+
+    if (!newProduct.name.trim()) {
+      alert('Please enter a product name')
       return
     }
-    navigate('/services/select')
+
+    if (!newProduct.description.trim()) {
+      alert('Please enter a product description')
+      return
+    }
+
+    // Add the product using the context function
+    addProduct(newProduct)
+
+    // Reset form and close modal
     setShowAddModal(false)
-    setNewProduct({ name: '', service: 'EMC Testing', description: '', category: 'Electronics' })
+    setNewProduct({
+      name: '',
+      service: 'EMC Testing',
+      description: '',
+      category: 'Electronics'
+    })
+
+    // Show success message
+    alert('Product added successfully!')
   }
 
   const handleDelete = (id, e) => {
@@ -39,17 +79,27 @@ function Products() {
     }
   }
 
+  const handleModalClose = () => {
+    setShowAddModal(false)
+    setNewProduct({
+      name: '',
+      service: 'EMC Testing',
+      description: '',
+      category: 'Electronics'
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Your Products</h2>
-        <Link
-          to="/services/select"
+        <button
+          onClick={() => setShowAddModal(true)}
           className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Add Product
-        </Link>
+        </button>
       </div>
 
       {/* Search */}
@@ -84,11 +134,10 @@ function Products() {
                     <div className="text-xs text-gray-500">ID: {p.id}</div>
                   </div>
                   <div className="text-sm text-gray-600">{p.service}</div>
-                  <div className={`text-xs px-2 py-1 rounded ${
-                    p.status === 'Complete' ? 'bg-green-100 text-green-700' :
-                    p.status === 'Testing' ? 'bg-blue-100 text-blue-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
+                  <div className={`text-xs px-2 py-1 rounded ${p.status === 'Complete' ? 'bg-green-100 text-green-700' :
+                      p.status === 'Testing' ? 'bg-blue-100 text-blue-700' :
+                        'bg-yellow-100 text-yellow-700'
+                    }`}>
                     {p.status}
                   </div>
                   <div className="text-sm font-semibold text-gray-700">{p.progress}%</div>
@@ -119,19 +168,135 @@ function Products() {
             {searchTerm ? 'No products found matching your search' : 'No products yet'}
           </p>
           {!searchTerm && (
-            <Link
-              to="/services/select"
+            <button
+              onClick={() => setShowAddModal(true)}
               className="inline-block px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
             >
               Add Your First Product
-            </Link>
+            </button>
           )}
         </div>
       )}
+
+      {/* Add Product Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleModalClose}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b">
+                  <h3 className="text-xl font-bold">Add New Product</h3>
+                  <button
+                    onClick={handleModalClose}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+                  {/* Product Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Product Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      placeholder="e.g., Smart Battery Pack"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Service Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Service Type *
+                    </label>
+                    <select
+                      value={newProduct.service}
+                      onChange={(e) => setNewProduct({ ...newProduct, service: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      {serviceOptions.map(service => (
+                        <option key={service} value={service}>{service}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      {categoryOptions.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description *
+                    </label>
+                    <textarea
+                      value={newProduct.description}
+                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                      placeholder="Brief description of your product..."
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleModalClose}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddProduct}
+                      className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Add Product
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 export default Products
-
-

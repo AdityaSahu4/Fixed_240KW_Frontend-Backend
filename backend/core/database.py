@@ -19,3 +19,29 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# ==============================
+# AUTH DATABASE (NEW)
+# ==============================
+
+AUTH_DATABASE_URL = "sqlite:///database/auth.db"
+
+auth_engine = create_engine(
+    AUTH_DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+
+AuthSessionLocal = sessionmaker(
+    bind=auth_engine,
+    autoflush=False,
+    autocommit=False
+)
+
+AuthBase = declarative_base()
+
+def get_auth_db():
+    db = AuthSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

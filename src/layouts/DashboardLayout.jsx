@@ -211,7 +211,7 @@ function DashboardLayout() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gray-300" />
-              <span className="text-sm font-medium text-gray-700">Sarah Chen</span>
+              <span className="text-sm font-medium text-gray-700">Aditya Kumar Sahu</span>
             </div>
           </div>
           {/* Mobile Notification Button */}
